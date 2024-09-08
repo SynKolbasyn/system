@@ -1,0 +1,10 @@
+[package]
+name = "system"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+authors = ["Andrew Kozmin <syn.kolbasyn.06@gmail.com>"]
+description = "The program that gives access to the system"
+readme = "README.md"
+homepage = "https://github.com/SynKolbasyn/system"
+repository = "https://github.com/SynKolbasyn/system"
