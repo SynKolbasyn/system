@@ -15,6 +15,31 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-fn main() {
+mod user;
+mod net;
+mod blockchain;
 
+
+use anyhow::Result;
+
+use crate::user::User;
+
+
+#[tokio::main]
+async fn main() {
+  loop {
+    match main_loop() {
+      Ok(_) => break,
+      Err(e) => eprintln!("CRITICAL ERROR: {e}"),
+    }
+  }
+}
+
+
+fn main_loop() -> Result<()> {
+  let user: User = User::get_account()?;
+
+  loop {
+    
+  }
 }
