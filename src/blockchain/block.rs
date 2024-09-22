@@ -23,6 +23,7 @@ use std::{
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
+use ssh_key::PrivateKey;
 
 use crate::blockchain::data::Data;
 
@@ -51,9 +52,9 @@ impl Block {
   }
 
 
-  pub(crate) fn create<D: Serialize + for<'a> Deserialize<'a>>(data: D, miner_amount: f64) -> Result<Self> {
+  pub(crate) fn create<D: Serialize + for<'a> Deserialize<'a>>(data: D, private_key: PrivateKey, miner_amount: f64) -> Result<Self> {
     Ok(Self::new(
-      Data::create(data, miner_amount)?,
+      Data::create(data, private_key, miner_amount)?,
       Vec::new(),
       DateTime::default(),
     ))

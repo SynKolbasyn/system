@@ -23,18 +23,31 @@ use std::{
 
 use anyhow::{Context, Result};
 use homedir::my_home;
+use serde::{Deserialize, Serialize};
 use ssh_key::{rand_core::OsRng, Algorithm, PrivateKey, LineEnding};
 use tokio::task::JoinHandle;
 use libp2p::identity::Keypair;
 
 use crate::net::Net;
-use crate::blockchain::{get_last_block, block::Block};
+use crate::blockchain::{self, get_last_block, block::Block};
 
 
+#[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct User {
   first_name: String,
   last_name: String,
   username: String,
+}
+
+
+impl Default for User {
+  fn default() -> Self {
+    Self::new(
+      String::default(),
+      String::default(),
+      String::default(),
+    )
+  }
 }
 
 
@@ -48,12 +61,12 @@ impl User {
   }
 
 
-  pub(crate) fn from_key_path(key_path: &Path, password: String) -> Result<Self> {
+  pub(crate) async fn from_key_path(key_path: &Path, password: String) -> Result<Self> {
     let key: PrivateKey = PrivateKey::read_openssh_file(key_path)?.decrypt(password)?;
     let keypair: Keypair = Keypair::ed25519_from_bytes(key.key_data().ed25519().context("Key type is not ed25519")?.private.to_bytes())?;
     let net_handle: JoinHandle<Result<()>> = Net::from_keypair(keypair)?.start();
 
-    Ok(Self::new("".to_string(), "".to_string(), "".to_string()))
+    Ok(blockchain::get_user()?)
   }
 
   
@@ -67,12 +80,19 @@ impl User {
   pub(crate) fn create(key_path: &Path, password: String, first_name: String, last_name: String, username: String) -> Result<Self> {
     let mut key: PrivateKey = PrivateKey::random(&mut OsRng, Algorithm::Ed25519)?;
     key.set_comment(username.clone());
+
+    let keypair: Keypair = Keypair::ed25519_from_bytes(key.key_data().ed25519().context("Key type is not ed25519")?.private.to_bytes())?;
+    let net_handle: JoinHandle<Result<()>> = Net::from_keypair(keypair)?.start();
+
     key.encrypt(&mut OsRng, password)?.write_openssh_file(key_path, LineEnding::LF)?;
+
+    
+
     Ok(Self::new(first_name, last_name, username))
   }
 
 
-  pub(crate) fn get_account() -> Result<User> {
+  pub(crate) async fn get_account() -> Result<User> {
     let default_path: PathBuf = my_home()?.context("Could not get the path of the home folder")?.join(".system/private_key.pem");
     
     'main_loop: loop {
@@ -97,7 +117,7 @@ impl User {
           let mut password: String = String::new();
           stdin().read_line(&mut password)?;
 
-          match User::from_key_path(key_path, password.trim().to_string()) {
+          match User::from_key_path(key_path, password.trim().to_string()).await {
             Ok(user) => return Ok(user),
             Err(e) => eprintln!("Failed to load the user due to an error: {e}"),
           }

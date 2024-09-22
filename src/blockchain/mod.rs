@@ -21,17 +21,63 @@ pub(crate) mod data;
 
 use std::{
   path::PathBuf,
-  fs::read_dir
+  fs::{read_dir, create_dir_all},
 };
 
 use anyhow::{Result, Context};
 use homedir::my_home;
+use ssh_key::PrivateKey;
 
 use crate::blockchain::block::Block;
+use crate::user::User;
 
 
-pub(crate) fn get_last_block() -> Result<Block> {
-  let blockchain_path: PathBuf = my_home()?.context("Could not get the path of the blockchain folder")?.join("blockchain/");
-  let block_id: usize = read_dir(&blockchain_path)?.count();
-  Ok(Block::from_path(blockchain_path.join(format!("{block_id}.json")))?)
+pub(crate) struct Blockchain {
+  path: PathBuf,
+}
+
+
+impl Blockchain {
+  fn new(path: PathBuf) -> Self {
+    Self {
+      path,
+    }
+  }
+
+
+  pub(crate) fn from_default_path() -> Result<Self> {
+    Ok(Self::new(my_home()?.context("Could not get the path of the blockchain folder")?.join(".system/blockchain/")))
+  }
+
+
+  pub(crate) fn get_last_block(&self) -> Result<Block> {
+    let block_id: usize = read_dir(&self.path)?.count();
+    Ok(Block::from_path(self.get_path()?.join(format!("{block_id}.json")))?)
+  }
+  
+  
+  pub(crate) fn get_user(&self) -> Result<User> {
+    let mut user = User::default();
+  
+    for block in read_dir(self.get_path()?)? {
+      println!("{:?}", block);
+    }
+  
+    Ok(user)
+  }
+  
+  
+  pub(crate) fn create_user(&self, user: User, private_key: PrivateKey) -> Result<User> {
+    let block: Block = Block::create(user.clone(), private_key, f64::default())?;
+    block.confirm(prev_block_id, prev_block_hash, user.);
+    Ok(user)
+  }
+
+
+  fn get_path(&self) -> Result<PathBuf> {
+    if !self.path.exists() {
+      create_dir_all(&self.path)?;
+    }
+    Ok(self.path.clone())
+  }
 }

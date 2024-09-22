@@ -15,9 +15,10 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
+use ssh_key::{PrivateKey, HashAlg, LineEnding, SshSig, PublicKey};
 use sha3::{Digest, Sha3_512};
 
 
@@ -27,6 +28,8 @@ pub(crate) struct Data {
   prev_block_hash: Vec<u8>,
   create_time: DateTime<Utc>,
   data: Vec<u8>,
+  public_key: String,
+  signature: String,
   miner: String,
   miner_amount: f64,
   proof_of_work: Vec<u8>,
@@ -34,12 +37,14 @@ pub(crate) struct Data {
 
 
 impl Data {
-  fn new(id: u128, prev_block_hash: Vec<u8>, create_time: DateTime<Utc>, data: Vec<u8>, miner: String, miner_amount: f64, proof_of_work: Vec<u8>) -> Self {
+  fn new(id: u128, prev_block_hash: Vec<u8>, create_time: DateTime<Utc>, data: Vec<u8>, public_key: String, signature: String, miner: String, miner_amount: f64, proof_of_work: Vec<u8>) -> Self {
     Self {
       id,
       prev_block_hash,
       create_time,
       data,
+      public_key,
+      signature,
       miner,
       miner_amount,
       proof_of_work,
@@ -47,16 +52,29 @@ impl Data {
   }
 
 
-  pub(crate) fn create<D: Serialize + for<'a> Deserialize<'a>>(data: D, miner_amount: f64) -> Result<Self> {
+  pub(crate) fn create<D: Serialize + for<'a> Deserialize<'a>>(data: D, private_key: PrivateKey, miner_amount: f64) -> Result<Self> {
+    let data: Vec<u8> = serde_json::to_vec(&data)?;
+    let signature: String = private_key.sign("", HashAlg::Sha512, &data)?.to_pem(LineEnding::LF)?;
+
     Ok(Self::new(
       u128::MIN,
       Vec::new(),
       Utc::now(),
-      serde_json::to_vec(&data)?,
+      data,
+      private_key.public_key().to_openssh()?,
+      signature,
       String::new(),
       miner_amount,
       Vec::new(),
     ))
+  }
+
+
+  pub(crate) fn check(&self) -> Result<()> {
+    let signature: SshSig = SshSig::from_pem(&self.signature)?;
+    let public_key: PublicKey = PublicKey::from_openssh(&self.public_key)?;
+    public_key.verify("", &serde_json::to_vec(self)?, &signature)?;
+    Ok(())
   }
 
 
@@ -70,16 +88,18 @@ impl Data {
 
     loop {
       proof_of_work.push(u8::MIN);
-      for byte in u8::MIN..=u8::MAX {
+      'check_for: for byte in u8::MIN..=u8::MAX {
         proof_of_work[idx] = byte;
         self.proof_of_work = proof_of_work.clone();
 
         let hash: Vec<u8> = self.hash()?;
-        let first_byte_of_hash: &u8 = hash.first().context("The hash does not contain the first byte")?;
 
-        if *first_byte_of_hash == u8::MIN {
-          return Ok(hash);
+        for &byte in hash.split_at(5).0 {
+          if byte != u8::MIN {
+            continue 'check_for;
+          }
         }
+        return Ok(hash);
       }
       idx += 1;
     }

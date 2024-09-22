@@ -67,9 +67,14 @@ impl ServerList {
   }
 
 
-  pub(crate) fn add_addr_and_save<P: AsRef<Path>>(&mut self, path: P, peer_id: PeerId, listener_id: ListenerId, multiaddr: Multiaddr) -> Result<()> {
+  pub(crate) fn add_addr_and_save<P: AsRef<Path>>(&mut self, path: Option<P>, peer_id: PeerId, listener_id: ListenerId, multiaddr: Multiaddr) -> Result<()> {
     self.add_addr(peer_id, listener_id, multiaddr);
-    self.save(path)?;
+    if path.is_some() {
+      self.save(path.unwrap())?;
+    }
+    else {
+      self.save(my_home()?.context("context")?.join(".system/server_list.json"))?;
+    }
     Ok(())
   }
 
