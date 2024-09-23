@@ -15,37 +15,48 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-use std::path::PathBuf;
+mod menu;
 
 
-// #[derive(Debug, Clone)]
-pub(crate) struct User {
-  first_name: String,
-  last_name: String,
-  username: String,
-  key_path: PathBuf,
+use anyhow::Result;
+
+use crate::ui::menu::{Menu, Login};
+use crate::user::User;
+
+
+pub(crate) struct UI {
+  menu: Box<dyn Menu>,
+  user: User,
 }
 
 
-impl Default for User {
+impl Default for UI {
   fn default() -> Self {
     Self::new(
-      String::default(),
-      String::default(),
-      String::default(),
-      PathBuf::default(),
+      Login::default_menu(),
+      User::default(),
     )
   }
 }
 
 
-impl User {
-  fn new(first_name: String, last_name: String, username: String, key_path: PathBuf) -> Self {
+impl UI {
+  fn new<M: Menu + 'static>(menu: Box<M>, user: User) -> Self {
     Self {
-      first_name,
-      last_name,
-      username,
-      key_path,
+      menu,
+      user,
     }
+  }
+
+
+  pub(crate) fn show_menu(&self) -> Result<()> {
+    self.menu.show_menu()?;
+    Ok(())
+  }
+
+
+  pub(crate) fn process_action(&mut self) -> Result<()> {
+    (self.menu, self.user) = self.menu.process_action(&self.user)?;
+    Ok(())
   }
 }

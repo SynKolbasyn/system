@@ -15,56 +15,30 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+mod ui;
 mod user;
-pub mod net;
-mod blockchain;
 
-
-use std::io::{stdin, stdout, Write};
 
 use anyhow::Result;
-use tokio::task::{self, JoinHandle};
 
-use crate::user::User;
-use crate::net::server::server_main;
+use ui::UI;
 
 
-#[tokio::main]
-async fn main() {
+fn main() {
   loop {
-    match main_loop().await {
+    match main_loop() {
       Ok(_) => break,
-      Err(e) => eprintln!("CRITICAL ERROR: {e}"),
+      Err(error) => eprintln!("CRITICAL ERROR: {error}"),
     }
   }
 }
 
 
-async fn main_loop() -> Result<()> {
-  if is_server_needed()? {
-    task::spawn(async {
-      server_main().await
-    });
-  }
-
-  let user: User = User::get_account().await?;
+fn main_loop() -> Result<()> {
+  let mut ui: UI = UI::default();
 
   loop {
-    
+    ui.show_menu()?;
+    ui.process_action()?;
   }
-}
-
-
-fn is_server_needed() -> Result<bool> {
-  print!("Do you want to use your computer as a server as well? [Y/n]: ");
-  stdout().flush()?;
-
-  let mut agreement = String::new();
-  stdin().read_line(&mut agreement)?;
-
-  Ok(match agreement.to_lowercase().trim() {
-    "y" => true,
-    "yes" => true,
-    _ => false,
-  })
 }

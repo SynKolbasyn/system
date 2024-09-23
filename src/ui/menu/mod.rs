@@ -15,37 +15,16 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-use std::path::PathBuf;
+mod login;
 
 
-// #[derive(Debug, Clone)]
-pub(crate) struct User {
-  first_name: String,
-  last_name: String,
-  username: String,
-  key_path: PathBuf,
-}
+use anyhow::Result;
+
+pub(crate) use crate::ui::menu::login::Login;
+use crate::user::User;
 
 
-impl Default for User {
-  fn default() -> Self {
-    Self::new(
-      String::default(),
-      String::default(),
-      String::default(),
-      PathBuf::default(),
-    )
-  }
-}
-
-
-impl User {
-  fn new(first_name: String, last_name: String, username: String, key_path: PathBuf) -> Self {
-    Self {
-      first_name,
-      last_name,
-      username,
-      key_path,
-    }
-  }
+pub(crate) trait Menu {
+  fn show_menu(&self) -> Result<()>;
+  fn process_action(&self, user: &User) -> Result<(Box<dyn Menu>, User)>;
 }
