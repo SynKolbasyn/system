@@ -15,15 +15,11 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-use std::path::PathBuf;
-
-
 // #[derive(Debug, Clone)]
 pub(crate) struct User {
   first_name: String,
   last_name: String,
   username: String,
-  key_path: PathBuf,
 }
 
 
@@ -33,19 +29,26 @@ impl Default for User {
       String::default(),
       String::default(),
       String::default(),
-      PathBuf::default(),
     )
   }
 }
 
 
 impl User {
-  fn new(first_name: String, last_name: String, username: String, key_path: PathBuf) -> Self {
+  pub(crate) fn new(first_name: String, last_name: String, username: String) -> Self {
     Self {
       first_name,
       last_name,
       username,
-      key_path,
     }
+  }
+
+
+  pub(crate) fn from<FN: ToString, LN: ToString, UN: ToString>(first_name: FN, last_name: LN, username: UN) -> Self {
+    Self::new(
+      first_name.to_string(),
+      last_name.to_string(),
+      username.to_string(),
+    )
   }
 }

@@ -15,10 +15,16 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-use std::io::{stdout, Write, stdin};
+use std::{
+  io::{stdin, stdout, Stdin, Stdout, Write},
+  fs::create_dir_all,
+  path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
 use strum::{EnumIter, EnumMessage, IntoEnumIterator};
+use ssh_key::{PrivateKey, rand_core::OsRng, Algorithm, LineEnding};
+use homedir::my_home;
 
 use crate::ui::menu::Menu;
 use crate::user::User;
@@ -81,7 +87,38 @@ impl Menu for Login {
 
 impl Login {
   fn create_user() -> Result<User> {
-    Ok(User::default())
+    let stdin: Stdin = stdin();
+    let mut stdout: Stdout = stdout();
+
+    let mut first_name: String = String::new();
+    print!("Enter your first name: ");
+    stdout.flush()?;
+    stdin.read_line(&mut first_name)?;
+
+    let mut last_name: String = String::new();
+    print!("Enter your last name: ");
+    stdout.flush()?;
+    stdin.read_line(&mut last_name)?;
+
+    let mut username: String = String::new();
+    print!("Enter the username: ");
+    stdout.flush()?;
+    stdin.read_line(&mut username)?;
+
+    let mut password: String = String::new();
+    print!("Enter password: ");
+    stdout.flush()?;
+    stdin.read_line(&mut password)?;
+
+    let mut key: PrivateKey = PrivateKey::random(&mut OsRng, Algorithm::Ed25519)?;
+    key.set_comment(username.trim());
+    key.encrypt(&mut OsRng, password.trim())?.write_openssh_file(&data_path("")?.join("key.pem"), LineEnding::LF)?;
+
+    Ok(User::from(
+      first_name.trim(),
+      last_name.trim(),
+      username.trim(),
+    ))
   }
 
 
@@ -93,4 +130,13 @@ impl Login {
   pub(crate) fn default_menu() -> Box<Self> {
     Box::new(Self::default())
   }
+}
+
+
+fn data_path<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
+  let path: PathBuf = my_home()?.context("The user's home folder was not found")?.join(".system/").join(path);
+  if !path.exists() {
+    create_dir_all(&path)?;
+  }
+  Ok(path)
 }
