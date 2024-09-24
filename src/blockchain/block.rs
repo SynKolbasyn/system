@@ -28,7 +28,7 @@ use crate::blockchain::data::Data;
 
 
 #[derive(Serialize, Deserialize)]
-struct Block {
+pub(crate) struct Block {
   id: u128,
   prev_block_hash: Vec<u8>,
   data: Data,

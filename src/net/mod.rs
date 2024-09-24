@@ -15,4 +15,29 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-pub(crate) struct Net;
+use libp2p::{
+  swarm::Swarm,
+  SwarmBuilder,
+};
+
+use crate::blockchain::block::Block;
+
+
+pub(crate) struct Net {
+  swarm: Swarm,
+}
+
+
+impl Net {
+  fn new() -> Self {
+    Self
+  }
+
+
+  fn send_block(block: Block) {
+
+  }
+
+
+
+}

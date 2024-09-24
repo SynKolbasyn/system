@@ -15,22 +15,25 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-mod block;
+pub(crate) mod block;
 mod data;
 
+
+use std::sync::{Arc, RwLock};
 
 use anyhow::Result;
 
 use crate::net::Net;
+use crate::blockchain::block::Block;
 
 
-struct Blockchain<'n> {
-  net: &'n Net,
+struct Blockchain {
+  net: Arc<RwLock<Net>>,
 }
 
 
-impl<'n> Blockchain<'n> {
-  fn new(net: &'n Net) -> Self {
+impl Blockchain {
+  fn new(net: Arc<RwLock<Net>>) -> Self {
     Self {
       net: net,
     }
@@ -39,5 +42,11 @@ impl<'n> Blockchain<'n> {
 
   fn create_block(&self) -> Result<()> {
     Ok(())
+  }
+
+
+  fn check_block(&self, block: Block) -> Result<bool> {
+
+    Ok(true)
   }
 }
