@@ -18,6 +18,7 @@
 mod ui;
 mod user;
 mod blockchain;
+mod net;
 
 
 use anyhow::Result;

@@ -15,29 +15,4 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-mod block;
-mod data;
-
-
-use anyhow::Result;
-
-use crate::net::Net;
-
-
-struct Blockchain<'n> {
-  net: &'n Net,
-}
-
-
-impl<'n> Blockchain<'n> {
-  fn new(net: &'n Net) -> Self {
-    Self {
-      net: net,
-    }
-  }
-
-
-  fn create_block(&self) -> Result<()> {
-    Ok(())
-  }
-}
+pub(crate) struct Net;
