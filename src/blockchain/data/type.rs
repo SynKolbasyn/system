@@ -15,15 +15,11 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-pub(crate) mod main;
+use serde::{Serialize, Deserialize};
 
 
-use anyhow::Result;
-
-use crate::user::User;
-
-
-pub(crate) trait Menu {
-  fn show_menu(&self) -> Result<()>;
-  fn process_action(&self, user: &mut User) -> Result<Box<dyn Menu>>;
+#[derive(Serialize, Deserialize, Clone)]
+pub(crate) enum Type {
+  User,
+  Transfer,
 }

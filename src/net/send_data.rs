@@ -15,15 +15,38 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-pub(crate) mod main;
+use libp2p::gossipsub::Sha256Topic;
 
 
-use anyhow::Result;
+pub(crate) struct SendData {
+  pub(crate) topic: Sha256Topic,
+  pub(crate) data: Vec<u8>,
+}
 
-use crate::user::User;
+
+impl Default for SendData {
+  fn default() -> Self {
+    Self::new(
+      Sha256Topic::new(String::default()),
+      Vec::default(),
+    )
+  }
+}
 
 
-pub(crate) trait Menu {
-  fn show_menu(&self) -> Result<()>;
-  fn process_action(&self, user: &mut User) -> Result<Box<dyn Menu>>;
+impl SendData {
+  fn new(topic: Sha256Topic, data: Vec<u8>) -> Self {
+    Self {
+      topic,
+      data,
+    }
+  }
+
+
+  pub(crate) fn create<T: Into<String>>(topic: T, data: Vec<u8>) -> Self {
+    Self::new(
+      Sha256Topic::new(topic),
+      data,
+    )
+  }
 }

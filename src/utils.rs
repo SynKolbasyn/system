@@ -15,40 +15,19 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-// #[derive(Debug, Clone)]
-pub(crate) struct User {
-  first_name: String,
-  last_name: String,
-  username: String,
-}
+use std::{
+  path::{Path, PathBuf},
+  fs::create_dir_all,
+};
+
+use anyhow::{Result, Context};
+use homedir::my_home;
 
 
-impl Default for User {
-  fn default() -> Self {
-    Self::new(
-      String::default(),
-      String::default(),
-      String::default(),
-    )
+pub(crate) fn data_path<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
+  let path: PathBuf = my_home()?.context("The user's home folder was not found")?.join(".system/").join(path);
+  if !path.exists() {
+    create_dir_all(&path)?;
   }
-}
-
-
-impl User {
-  pub(crate) fn new(first_name: String, last_name: String, username: String) -> Self {
-    Self {
-      first_name,
-      last_name,
-      username,
-    }
-  }
-
-
-  pub(crate) fn from<FN: ToString, LN: ToString, UN: ToString>(first_name: FN, last_name: LN, username: UN) -> Self {
-    Self::new(
-      first_name.to_string(),
-      last_name.to_string(),
-      username.to_string(),
-    )
-  }
+  Ok(path)
 }

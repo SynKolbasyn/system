@@ -15,7 +15,7 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-use std::iter::repeat;
+use std::{iter::repeat, path::Path, fs::File};
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
@@ -25,6 +25,8 @@ use sha3::{Digest, Sha3_512};
 use itertools::Itertools;
 
 use crate::blockchain::data::Data;
+
+use super::data::r#type::Type;
 
 
 #[derive(Serialize, Deserialize)]
@@ -52,6 +54,12 @@ impl Block {
       signature,
       hash,
     }
+  }
+
+
+  pub(crate) fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+    let file: File = File::options().truncate(false).read(true).open(path)?;
+    Ok(serde_json::from_reader(file)?)
   }
 
 
@@ -85,5 +93,15 @@ impl Block {
 
   fn hash(&self) -> Result<Vec<u8>> {
     Ok(Sha3_512::digest(serde_json::to_vec(self)?).to_vec())
+  }
+
+
+  pub(crate) fn get_data(&self) -> Vec<u8> {
+    self.data.get_data()
+  }
+
+
+  pub(crate) fn get_data_type(&self) -> Type {
+    self.data.get_type()
   }
 }

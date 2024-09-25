@@ -18,25 +18,18 @@
 mod menu;
 
 
+use std::io::{stdin, stdout, Stdin, Stdout, Write};
+
 use anyhow::Result;
 
-use crate::ui::menu::{Menu, Login};
+use crate::utils::data_path;
+use crate::ui::menu::{Menu, main::Main};
 use crate::user::User;
 
 
 pub(crate) struct UI {
   menu: Box<dyn Menu>,
   user: User,
-}
-
-
-impl Default for UI {
-  fn default() -> Self {
-    Self::new(
-      Login::default_menu(),
-      User::default(),
-    )
-  }
 }
 
 
@@ -56,7 +49,60 @@ impl UI {
 
 
   pub(crate) fn process_action(&mut self) -> Result<()> {
-    (self.menu, self.user) = self.menu.process_action(&self.user)?;
+    self.menu = self.menu.process_action(&mut self.user)?;
     Ok(())
+  }
+
+
+  pub(crate) fn create() -> Result<Self> {
+    let user: User = if !data_path("")?.join("key.pem").exists() {
+      Self::create_user()?
+    } else {
+      let mut password: String = String::new();
+      print!("Enter password: ");
+      stdout().flush()?;
+      stdin().read_line(&mut password)?;
+      User::from_password(password.trim().to_string())?
+    };
+
+    Ok(Self::new(
+      Main::default_menu(),
+      user,
+    ))
+  }
+
+
+  fn create_user() -> Result<User> {
+    let stdin: Stdin = stdin();
+    let mut stdout: Stdout = stdout();
+
+    let mut first_name: String = String::new();
+    print!("Enter your first name: ");
+    stdout.flush()?;
+    stdin.read_line(&mut first_name)?;
+
+    let mut last_name: String = String::new();
+    print!("Enter your last name: ");
+    stdout.flush()?;
+    stdin.read_line(&mut last_name)?;
+
+    let mut user_name: String = String::new();
+    print!("Enter your user name: ");
+    stdout.flush()?;
+    stdin.read_line(&mut user_name)?;
+
+    let mut password: String = String::new();
+    print!("Enter password: ");
+    stdout.flush()?;
+    stdin.read_line(&mut password)?;
+
+    let user: User = User::create(
+      first_name.trim(),
+      last_name.trim(),
+      user_name.trim(),
+      password.trim(),
+    )?;
+
+    Ok(user)
   }
 }

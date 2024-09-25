@@ -16,27 +16,39 @@
 
 
 pub(crate) mod block;
-mod data;
+pub(crate) mod data;
 
 
-use std::sync::{Arc, RwLock};
+use std::fs::read_dir;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
+use ssh_key::{PrivateKey, PublicKey};
 
-use crate::net::Net;
-use crate::blockchain::block::Block;
+use crate::user::User;
+use crate::net::{Net, api::API};
+use crate::blockchain::{
+  block::Block,
+  data::{Data, user::UserData, r#type::Type},
+};
+use crate::utils::data_path;
 
 
-struct Blockchain {
-  net: Arc<RwLock<Net>>,
+pub(crate) struct Blockchain {
+  net: API,
 }
 
 
 impl Blockchain {
-  fn new(net: Arc<RwLock<Net>>) -> Self {
+  fn new(net: API) -> Self {
     Self {
-      net: net,
+      net,
     }
+  }
+
+
+  pub(crate) fn from_key(key: &PrivateKey) -> Result<Self> {
+    let net: API = Net::from_key(&key)?;
+    Ok(Self::new(net))
   }
 
 
@@ -45,8 +57,38 @@ impl Blockchain {
   }
 
 
-  fn check_block(&self, block: Block) -> Result<bool> {
-
+  fn check_block(&self, block: &Block) -> Result<bool> {
     Ok(true)
+  }
+
+
+  pub(crate) fn add_user(&self, user: &User) -> Result<()> {
+    let data: Data = Data::create(Type::User, UserData::from_user(user)?, 0.0, user.get_key())?;
+    self.net.send_block_data(data)?;
+    Ok(())
+  }
+
+
+  pub(crate) fn get_user(&self, public_key: &PublicKey) -> Result<UserData> {
+    let public_key: String = public_key.to_openssh()?;
+    // let user_data: UserData = UserData::default();
+    for block_path in read_dir(data_path("blockchain/")?)? {
+      let block: Block = Block::from_path(block_path?.path())?;
+      if !self.check_block(&block)? {
+        todo!("ADD BLOCK VERIFICATION");
+      }
+
+      match block.get_data_type() {
+        Type::User => {
+          let user_data: UserData = serde_json::from_slice::<UserData>(&block.get_data())?;
+          if user_data.get_public_key() == public_key {
+            return Ok(user_data);
+          }
+        },
+        Type::Transfer => (),
+      }
+    }
+
+    bail!("User data not found in blockchain");
   }
 }

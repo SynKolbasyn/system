@@ -15,58 +15,44 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-mod ui;
-mod user;
-mod blockchain;
-mod net;
-mod utils;
-
-
-use std::io::{stdin, stdout, Write};
-
 use anyhow::Result;
-use tokio::task;
+use serde::Serialize;
+use tokio::{task::JoinHandle, sync::watch::Sender};
 
-use crate::{ui::UI, net::server::server_main};
+use crate::blockchain::{block::Block, data::Data};
+use crate::net::send_data::SendData;
 
 
+pub(crate) struct API {
+  net_handle: JoinHandle<Result<()>>,
+  sender: Sender<SendData>,
+}
 
-#[tokio::main]
-async fn main() {
-  loop {
-    match main_loop() {
-      Ok(_) => break,
-      Err(error) => eprintln!("CRITICAL ERROR: {error}"),
+
+impl API {
+  pub(crate) fn new(net_handle: JoinHandle<Result<()>>, sender: Sender<SendData>) -> Self {
+    Self {
+      net_handle,
+      sender,
     }
   }
-}
 
 
-fn main_loop() -> Result<()> {
-  if is_server_needed()? {
-    task::spawn(async {
-      server_main().await?;
-      anyhow::Ok(())
-    });
+  fn send<T: Into<String>, S: Serialize>(&self, topic: T, data: S) -> Result<()> {
+    let send_data: SendData = SendData::create(topic, serde_json::to_vec(&data)?);
+    self.sender.send(send_data)?;
+    Ok(())
   }
 
-  let mut ui: UI = UI::create()?;
 
-  loop {
-    ui.show_menu()?;
-    ui.process_action()?;
+  pub(crate) fn send_block(&self, block: Block) -> Result<()> {
+    self.send("block", block)?;
+    Ok(())
   }
-}
 
 
-fn is_server_needed() -> Result<bool> {
-  let mut answer: String = String::new();
-  print!("Do you want to run the server in addition to the main program? [Y/n]: ");
-  stdout().flush()?;
-  stdin().read_line(&mut answer)?;
-  Ok(match answer.to_lowercase().trim() {
-    "y" => true,
-    "yes" => true,
-    _ => false,
-  })
+  pub(crate) fn send_block_data(&self, block_data: Data) -> Result<()> {
+    self.send("block_data", block_data)?;
+    Ok(())
+  }
 }
