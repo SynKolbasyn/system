@@ -85,7 +85,6 @@ impl User {
 
     let user: Self = Self::from_user_data(user_data, key, blockchain);
     user.blockchain.add_user(&user)?;
-    println!("USER ADDED");
     
     Ok(user)
   }

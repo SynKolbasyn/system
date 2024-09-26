@@ -63,7 +63,7 @@ impl Blockchain {
 
 
   pub(crate) fn add_user(&self, user: &User) -> Result<()> {
-    let data: Data = Data::create(Type::User, UserData::from_user(user)?, 0.0, user.get_key())?;
+    let data: Data = Data::create(Type::User, UserData::from_user(user)?, 10.0, user.get_key())?;
     self.net.send_block_data(data)?;
     Ok(())
   }
