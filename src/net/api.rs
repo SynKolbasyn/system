@@ -45,13 +45,13 @@ impl API {
   }
 
 
-  pub(crate) fn send_block(&self, block: Block) -> Result<()> {
+  pub(crate) fn send_block(&self, block: &Block) -> Result<()> {
     self.send("block", block)?;
     Ok(())
   }
 
 
-  pub(crate) fn send_block_data(&self, block_data: Data) -> Result<()> {
+  pub(crate) fn send_block_data(&self, block_data: &Data) -> Result<()> {
     self.send("block_data", block_data)?;
     Ok(())
   }

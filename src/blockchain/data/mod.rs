@@ -22,7 +22,7 @@ pub(crate) mod user;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
-use ssh_key::{PrivateKey, SshSig, HashAlg, LineEnding};
+use ssh_key::{PrivateKey, HashAlg, LineEnding};
 
 
 use crate::blockchain::data::r#type::Type;
@@ -52,19 +52,19 @@ impl Data {
   }
 
 
-  pub(crate) fn create<S: Serialize>(r#type: Type, data: S, miner_amount: f64, private_key: PrivateKey) -> Result<Self> {
+  pub(crate) fn create<S: Serialize>(r#type: Type, data: S, miner_amount: f64, key: PrivateKey) -> Result<Self> {
     let data: Vec<u8> = serde_json::to_vec(&data)?;
     let data: Self = Self::new(
       Utc::now(),
       r#type,
       data,
       miner_amount,
-      private_key.public_key().to_openssh()?,
+      key.public_key().to_openssh()?,
       String::new(),
     );
-    let signature: SshSig = SshSig::sign(&private_key, "", HashAlg::Sha512, &serde_json::to_vec(&data)?)?;
+    let signature: String = key.sign("system", HashAlg::Sha512, &serde_json::to_vec(&data)?)?.to_pem(LineEnding::LF)?;
     Ok(Self {
-      signature: signature.to_pem(LineEnding::LF)?,
+      signature,
       ..data
     })
   }

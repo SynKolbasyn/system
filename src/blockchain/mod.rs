@@ -19,7 +19,7 @@ pub(crate) mod block;
 pub(crate) mod data;
 
 
-use std::fs::read_dir;
+use std::fs::{read_dir, File};
 
 use anyhow::{bail, Result};
 use ssh_key::{PrivateKey, PublicKey};
@@ -57,14 +57,16 @@ impl Blockchain {
   }
 
 
-  fn check_block(&self, block: &Block) -> Result<bool> {
-    Ok(true)
-  }
-
-
   pub(crate) fn add_user(&self, user: &User) -> Result<()> {
     let data: Data = Data::create(Type::User, UserData::from_user(user)?, 10.0, user.get_key())?;
-    self.net.send_block_data(data)?;
+    self.net.send_block_data(&data)?;
+    let block: Block = match read_dir(data_path("blockchain/")?)?.last() {
+      Some(block_path) => Block::create(data, Block::from_path(block_path?.path())?, user.get_key())?,
+      None => Block::create_first(data, user.get_key())?,
+    };
+    self.net.send_block(&block)?;
+    let block_file: File = File::options().create_new(true).write(true).open(block.get_file_name()?)?;
+    serde_json::to_writer_pretty(block_file, &block)?;
     Ok(())
   }
 
@@ -72,11 +74,13 @@ impl Blockchain {
   pub(crate) fn get_user(&self, public_key: &PublicKey) -> Result<UserData> {
     let public_key: String = public_key.to_openssh()?;
     // let user_data: UserData = UserData::default();
+    let mut prev_block: Option<Block> = None;
     for block_path in read_dir(data_path("blockchain/")?)? {
-      let block: Block = Block::from_path(block_path?.path())?;
-      if !self.check_block(&block)? {
-        todo!("ADD BLOCK VERIFICATION");
+      let mut block: Block = Block::from_path(block_path?.path())?;
+      if !block.check(prev_block)? {
+        todo!("Add blockchain repairing");
       }
+      prev_block = Some(block.clone());
 
       match block.get_data_type() {
         Type::User => {

@@ -28,7 +28,7 @@ use std::{
   env::args,
 };
 
-use anyhow::{Result, Context};
+use anyhow::{bail, Context, Result};
 use api::API;
 use ssh_key::PrivateKey;
 use tokio::{
@@ -130,7 +130,7 @@ impl Net {
             _ => (),
           },
 
-          _ = self.command_receiver.changed() => {
+          Ok(_) = self.command_receiver.changed() => {
             let data = self.command_receiver.borrow_and_update();
             println!("{:#?}", data.topic);
           },
