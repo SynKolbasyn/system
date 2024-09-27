@@ -18,7 +18,7 @@
 use serde::{Serialize, Deserialize};
 
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) enum Type {
   User,
   Transfer,

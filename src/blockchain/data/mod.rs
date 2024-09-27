@@ -24,11 +24,10 @@ use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 use ssh_key::{PrivateKey, HashAlg, LineEnding};
 
-
 use crate::blockchain::data::r#type::Type;
 
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct Data {
   timestamp: DateTime<Utc>,
   r#type: Type,

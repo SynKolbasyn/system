@@ -24,13 +24,15 @@ use std::fs::{read_dir, File};
 use anyhow::{bail, Result};
 use ssh_key::{PrivateKey, PublicKey};
 
-use crate::user::User;
-use crate::net::{Net, api::API};
-use crate::blockchain::{
-  block::Block,
-  data::{Data, user::UserData, r#type::Type},
+use crate::{
+  blockchain::{
+    block::Block,
+    data::{Data, user::UserData, r#type::Type},
+  },
+  net::{Net, api::API},
+  user::User,
+  utils::data_path,
 };
-use crate::utils::data_path;
 
 
 pub(crate) struct Blockchain {
@@ -49,11 +51,6 @@ impl Blockchain {
   pub(crate) fn from_key(key: &PrivateKey) -> Result<Self> {
     let net: API = Net::from_key(&key)?;
     Ok(Self::new(net))
-  }
-
-
-  fn create_block(&self) -> Result<()> {
-    Ok(())
   }
 
 

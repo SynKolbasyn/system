@@ -18,8 +18,9 @@
 use libp2p::gossipsub::Sha256Topic;
 
 
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub(crate) struct SendData {
-  pub(crate) topic: Sha256Topic,
+  topic: String,
   pub(crate) data: Vec<u8>,
 }
 
@@ -27,7 +28,7 @@ pub(crate) struct SendData {
 impl Default for SendData {
   fn default() -> Self {
     Self::new(
-      Sha256Topic::new(String::default()),
+      String::default(),
       Vec::default(),
     )
   }
@@ -35,7 +36,7 @@ impl Default for SendData {
 
 
 impl SendData {
-  fn new(topic: Sha256Topic, data: Vec<u8>) -> Self {
+  fn new(topic: String, data: Vec<u8>) -> Self {
     Self {
       topic,
       data,
@@ -45,8 +46,18 @@ impl SendData {
 
   pub(crate) fn create<T: Into<String>>(topic: T, data: Vec<u8>) -> Self {
     Self::new(
-      Sha256Topic::new(topic),
+      topic.into(),
       data,
     )
+  }
+
+
+  pub(crate) fn topic(&self) -> Sha256Topic {
+    Sha256Topic::new(self.topic.clone())
+  }
+
+
+  pub(crate) fn data(&self) -> Vec<u8> {
+    self.data.clone()
   }
 }

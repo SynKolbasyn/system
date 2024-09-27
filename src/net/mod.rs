@@ -26,14 +26,16 @@ use std::{
   net::{Ipv4Addr, Ipv6Addr},
   time::Duration,
   env::args,
+  collections::HashSet,
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use api::API;
 use ssh_key::PrivateKey;
 use tokio::{
   task::{self, JoinHandle},
   sync::watch::{Sender, Receiver, channel},
+  time::{Interval, interval},
 };
 use libp2p::{
   futures::StreamExt,
@@ -75,6 +77,8 @@ impl Net {
 
 
   pub(crate) fn start(mut self) -> JoinHandle<Result<()>> {
+    let mut tasks: HashSet<SendData> = HashSet::new();
+    let mut interval: Interval = interval(Duration::from_secs(1));
     task::spawn(async move {
       loop {
         tokio::select! {
@@ -104,7 +108,7 @@ impl Net {
                 },
     
                 BehaviourEvent::Gossipsub(event) => match event {
-                  gossipsub::Event::Message { message: Message { data, .. } , .. } => println!("{}", String::from_utf8(data)?),
+                  gossipsub::Event::Message { message: Message { data, .. } , .. } => println!("{data:?}"),
                   gossipsub::Event::Subscribed { .. } => (),
                   gossipsub::Event::Unsubscribed { .. } => (),
                   gossipsub::Event::GossipsubNotSupported { .. } => (),
@@ -130,9 +134,17 @@ impl Net {
             _ => (),
           },
 
+          _ = interval.tick() => {
+            for data in tasks.clone() {
+              if let Ok(_) = self.swarm.behaviour_mut().gossipsub.publish(data.topic(), data.data()) {
+                tasks.remove(&data);
+              }
+            }
+          },
+
           Ok(_) = self.command_receiver.changed() => {
-            let data = self.command_receiver.borrow_and_update();
-            println!("{:#?}", data.topic);
+            let data: SendData = self.command_receiver.borrow_and_update().clone();
+            tasks.insert(data);
           },
         }
       }
@@ -200,12 +212,12 @@ impl Net {
     }
     swarm.behaviour_mut().kademlia.bootstrap()?;
 
+    let blocks_data_topic: Topic<_> = Sha256Topic::new("blocks_data");
+    let blocks_topic: Topic<_> = Sha256Topic::new("blocks");
     let blockchain_topic: Topic<_> = Sha256Topic::new("blockchain");
-    let blocks_for_verification_topic: Topic<_> = Sha256Topic::new("blocks_for_verification");
-    let verified_blocks_topic: Topic<_> = Sha256Topic::new("verified_blocks");
+    swarm.behaviour_mut().gossipsub.subscribe(&blocks_data_topic)?;
+    swarm.behaviour_mut().gossipsub.subscribe(&blocks_topic)?;
     swarm.behaviour_mut().gossipsub.subscribe(&blockchain_topic)?;
-    swarm.behaviour_mut().gossipsub.subscribe(&blocks_for_verification_topic)?;
-    swarm.behaviour_mut().gossipsub.subscribe(&verified_blocks_topic)?;
 
     let (sender, receiver): (Sender<SendData>, Receiver<SendData>) = channel(SendData::default());
     let net: Self = Self::new(swarm, receiver);

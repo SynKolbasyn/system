@@ -15,8 +15,11 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-use std::path::PathBuf;
-use std::{iter::repeat, path::Path, fs::File};
+use std::{
+  iter::repeat,
+  path::{Path, PathBuf},
+  fs::File,
+};
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
@@ -25,9 +28,10 @@ use ssh_key::{HashAlg, LineEnding, PrivateKey, PublicKey, SshSig};
 use sha3::{Digest, Sha3_512};
 use itertools::Itertools;
 
-use crate::blockchain::data::Data;
-use crate::blockchain::data::r#type::Type;
-use crate::utils::data_path;
+use crate::{
+  blockchain::data::{Data, r#type::Type},
+  utils::data_path,
+};
 
 
 const COMPLEXITY: [u8; 2] = [0; 2];

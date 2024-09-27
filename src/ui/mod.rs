@@ -22,9 +22,11 @@ use std::io::{stdin, stdout, Stdin, Stdout, Write};
 
 use anyhow::Result;
 
-use crate::utils::data_path;
-use crate::ui::menu::{Menu, main::Main};
-use crate::user::User;
+use crate::{
+  utils::data_path,
+  ui::menu::{Menu, main::Main},
+  user::User,
+};
 
 
 pub(crate) struct UI {

@@ -19,7 +19,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use libp2p::{
-  gossipsub::{self, MessageAuthenticity},
+  gossipsub::{self, MessageAuthenticity, ValidationMode},
   identify,
   identity::{Keypair, PublicKey},
   kad::{self, store::MemoryStore, PROTOCOL_NAME},
@@ -55,7 +55,9 @@ impl Behaviour {
     let peer_id: PeerId = publick_key.to_peer_id();
 
     let gossipsub_behaviour: gossipsub::Behaviour = {
-      let gossipsub_config: gossipsub::Config = gossipsub::ConfigBuilder::default().build()?;
+      let gossipsub_config: gossipsub::Config = gossipsub::ConfigBuilder::default()
+      .validation_mode(ValidationMode::Strict)
+      .build()?;
       let privacy: MessageAuthenticity = MessageAuthenticity::Signed(key.clone());
       gossipsub::Behaviour::new(privacy, gossipsub_config).unwrap()
     };

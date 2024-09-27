@@ -19,8 +19,10 @@ use anyhow::Result;
 use serde::Serialize;
 use tokio::{task::JoinHandle, sync::watch::Sender};
 
-use crate::blockchain::{block::Block, data::Data};
-use crate::net::send_data::SendData;
+use crate::{
+  blockchain::{block::Block, data::Data},
+  net::send_data::SendData,
+};
 
 
 pub(crate) struct API {
@@ -46,13 +48,13 @@ impl API {
 
 
   pub(crate) fn send_block(&self, block: &Block) -> Result<()> {
-    self.send("block", block)?;
+    self.send("blocks", block)?;
     Ok(())
   }
 
 
   pub(crate) fn send_block_data(&self, block_data: &Data) -> Result<()> {
-    self.send("block_data", block_data)?;
+    self.send("blocks_data", block_data)?;
     Ok(())
   }
 }

@@ -15,19 +15,13 @@
 //!   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-use crate::net::{
-  behaviour::{Behaviour, BehaviourEvent},
-  server_list::ServerList,
-};
-
-
 use std::{
   time::Duration,
   net::{Ipv4Addr, Ipv6Addr},
   path::Path,
 };
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use ssh_key::{PrivateKey, Algorithm, rand_core::OsRng};
 use libp2p::{
   futures::StreamExt,
@@ -42,6 +36,11 @@ use libp2p::{
   identify,
   kad,
   identity::Keypair,
+};
+
+use crate::net::{
+  behaviour::{Behaviour, BehaviourEvent},
+  server_list::ServerList,
 };
 
 
@@ -105,12 +104,12 @@ async fn main_loop() -> Result<()> {
   let mut server_list: ServerList = ServerList::default();
   swarm.behaviour_mut().kademlia.set_mode(Some(kad::Mode::Server));
 
+  let blocks_data_topic: Topic<_> = Sha256Topic::new("blocks_data");
+  let blocks_topic: Topic<_> = Sha256Topic::new("blocks");
   let blockchain_topic: Topic<_> = Sha256Topic::new("blockchain");
-  let blocks_for_verification_topic: Topic<_> = Sha256Topic::new("blocks_for_verification");
-  let verified_blocks_topic: Topic<_> = Sha256Topic::new("verified_blocks");
+  swarm.behaviour_mut().gossipsub.subscribe(&blocks_data_topic)?;
+  swarm.behaviour_mut().gossipsub.subscribe(&blocks_topic)?;
   swarm.behaviour_mut().gossipsub.subscribe(&blockchain_topic)?;
-  swarm.behaviour_mut().gossipsub.subscribe(&blocks_for_verification_topic)?;
-  swarm.behaviour_mut().gossipsub.subscribe(&verified_blocks_topic)?;
 
   loop {
     tokio::select! {
@@ -140,7 +139,7 @@ async fn main_loop() -> Result<()> {
             },
 
             BehaviourEvent::Gossipsub(event) => match event {
-              gossipsub::Event::Message { message: Message { data, .. } , .. } => println!("{}", String::from_utf8(data)?),
+              gossipsub::Event::Message { message: Message { data, .. } , .. } => (),
               gossipsub::Event::Subscribed { .. } => (),
               gossipsub::Event::Unsubscribed { .. } => (),
               gossipsub::Event::GossipsubNotSupported { .. } => (),
@@ -169,10 +168,6 @@ async fn main_loop() -> Result<()> {
 
         _ => (),
       },
-
-      // Ok(Some(line)) = stdin.next_line() => {
-      //   swarm.behaviour_mut().gossipsub.publish(topic.clone(), line)?;
-      // },
     }
   }
 }

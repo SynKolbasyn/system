@@ -20,8 +20,10 @@ use std::io::{stdin, stdout, Write};
 use anyhow::{Context, Result};
 use strum::{EnumIter, EnumMessage, IntoEnumIterator};
 
-use crate::ui::menu::Menu;
-use crate::user::User;
+use crate::{
+  ui::menu::Menu,
+  user::User,
+};
 
 
 #[derive(EnumIter, EnumMessage)]
