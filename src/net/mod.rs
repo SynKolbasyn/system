@@ -136,7 +136,7 @@ impl Net {
 
           _ = interval.tick() => {
             for data in tasks.clone() {
-              if let Ok(_) = self.swarm.behaviour_mut().gossipsub.publish(data.topic(), data.data()) {
+              if self.swarm.behaviour_mut().gossipsub.publish(data.topic(), data.data()).is_ok() {
                 tasks.remove(&data);
               }
             }
